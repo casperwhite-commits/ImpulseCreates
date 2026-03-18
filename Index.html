@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clickbait Game</title>
+  <style>
+    /* --- LAYOUT --- */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Menu Screen */
+    #menu {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 10;
+    }
+
+    /* RGB Animated Title */
+    .rgb-text {
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 900;
+      text-transform: uppercase;
+      background: linear-gradient(
+        to right,
+        #ff0000,
+        #ffff00,
+        #00ff00,
+        #00ffff,
+        #0000ff,
+        #ff00ff,
+        #ff0000
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s linear infinite;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+      margin-bottom: 30px;
+    }
+
+    /* RGB Glowing Button */
+    .rgb-button {
+      padding: 20px 80px;
+      font-size: 2rem;
+      font-weight: bold;
+      color: white;
+      background: #111;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 0;
+      border-radius: 50px;
+      transition: 0.3s;
+      outline: none;
+    }
+
+    .rgb-button:hover {
+      transform: scale(1.1);
+      letter-spacing: 5px;
+    }
+
+    .rgb-button::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: calc(100% + 8px);
+      height: calc(100% + 8px);
+      background: linear-gradient(
+        45deg,
+        #ff0000,
+        #ff7300,
+        #fffb00,
+        #48ff00,
+        #00ffd5,
+        #002bff,
+        #7a00ff,
+        #ff00c8,
+        #ff0000
+      );
+      background-size: 400%;
+      z-index: -1;
+      filter: blur(12px);
+      animation: gradientShift 20s linear infinite;
+      border-radius: 50px;
+      opacity: 0.8;
+    }
+
+    /* Game Screen Container */
+    #game-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: none;
+      background: linear-gradient(-45deg, #ff0000, #00ff00, #0000ff, #ff00ff);
+      background-size: 400% 400%;
+      animation: bgMove 10s ease infinite;
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #exitBtn,
+    #freezeBtn {
+      position: absolute;
+      top: 20px;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: 2px solid white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 100;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #exitBtn {
+      right: 20px;
+    }
+
+    #freezeBtn {
+      right: 120px;
+    }
+
+    /* Animations */
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    @keyframes bgMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- MENU -->
+  <div id="menu">
+    <h1 class="rgb-text">Clickbait Game</h1>
+    <button id="playBtn" class="rgb-button">PLAY</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-container">
+    <button id="freezeBtn">FREEZE</button>
+    <button id="exitBtn">EXIT</button>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    const playBtn = document.getElementById('playBtn');
+    const freezeBtn = document.getElementById('freezeBtn');
+    const exitBtn = document.getElementById('exitBtn');
+    const menu = document.getElementById('menu');
+    const gameContainer = document.getElementById('game-container');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Start game
+    playBtn.addEventListener('click', () => {
+      menu.style.display = 'none';          // hide menu + title
+      gameContainer.style.display = 'block';
+      resizeCanvas();
+      animate();
+    });
+
+    // Freeze: download screenshot
+    freezeBtn.addEventListener('click', () => {
+      const timestamp = new Date().toISOString().replaceAll(':', '-');
+      const filename = `clickbait-freeze-${timestamp}.png`;
+
+      if (canvas.toBlob) {
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      } else {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    });
+
+    // Exit: go back to menu cleanly
+    exitBtn.addEventListener('click', () => {
+      gameContainer.style.display = 'none';
+      menu.style.display = 'flex';
+      particles = [];
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    class Particle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 20 + 2;
+        this.speedX = (Math.random() - 0.5) * 5;
+        this.speedY = (Math.random() - 0.5) * 5;
+        this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.size > 0.2) this.size -= 0.15;
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Spawn particles on mouse move in game
+    window.addEventListener('mousemove', (e) => {
+      if (gameContainer.style.display === 'block') {
+        for (let i = 0; i < 8; i++) {
+          particles.push(new Particle(e.clientX, e.clientY));
+        }
+      }
+    });
+
+    function animate() {
+      if (gameContainer.style.display !== 'block') return;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].size <= 0.3) {
+          particles.splice(i, 1);
+          i--;
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>
